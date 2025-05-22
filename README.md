@@ -1,1 +1,2 @@
 # AnimalsApp
+# Animals
