@@ -28,7 +28,6 @@ async def create_db():
         await  conn.run_sync(Base.metadata.create_all)
     return({"msg":"db creat! =)"})
 
-
 origins = [
     "http://localhost:3000",
 ]

@@ -1,10 +1,4 @@
-import typing
-
-from sqlalchemy import DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey
-
-
+from sqlalchemy.orm import Mapped, mapped_column
 from src.db import Base
 
 class Animal(Base):
