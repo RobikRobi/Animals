@@ -9,3 +9,11 @@ class Animal(Base):
     name:Mapped[str]
     description:Mapped[str]
     population:Mapped[int]
+
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description":self.str,
+            "population":self.int
+        }

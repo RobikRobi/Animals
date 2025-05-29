@@ -13,9 +13,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from src.config import config
 
+from src.redis_client import redis_client
+import json
 
 app = APIRouter(prefix="/animals", tags=["Animals"])
 
+# функция отправки сообщения
 def send_email():
     smtp_server = config.env_data.SMTP_SERVER
     port = config.env_data.SMTP_PORT
@@ -49,6 +52,7 @@ def send_email():
     except Exception as e:
         print(f"Ошибка при отправке email: {e}")
 
+# добавление данных в базу
 @app.post("/add", response_model=OutAnimal)
 async def register_animal(
     data: AddAnimal,
@@ -65,9 +69,33 @@ async def register_animal(
 
     return newAnimal
 
+# фильтрация данных
 @app.get("/filter", response_model=list[OutAnimal])
 async def get_animals(user_filter: AnimalsFilter = FilterDepends(AnimalsFilter), db: AsyncSession = Depends(get_session)):
     query = user_filter.filter(select(Animal)) 
     result = await db.execute(query)
     return result.scalars().all()
 
+# кэширование базы данных
+@app.get("/cache", response_model=list[OutAnimal])
+async def get_animals(session: AsyncSession = Depends(get_session)):
+    cache_key = "animals_list"
+    cached_data = await redis_client.get(cache_key)
+    
+    if cached_data:
+        print("Данные взяты из кэша")
+        return json.loads(cached_data)
+    
+    # Если в кэше нет — запросим из базы
+    result = await session.execute(select(Animal))
+    animals = result.scalars().all()
+
+    await redis_client.set(cache_key, json.dumps([animal.as_dict() for animal in animals]), ex=60)
+
+    return [animal.as_dict() for animal in animals]
+
+# очистка кэша
+@app.post("/clear_cache")
+async def clear_cache():
+    await redis_client.delete("animals_list")
+    return {"status": "Кэш очищен"}

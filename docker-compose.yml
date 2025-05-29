@@ -1,0 +1,35 @@
+
+services:
+  db:
+    image: postgres
+    container_name: db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 664053
+      POSTGRES_DB: lessons
+    env_file:
+      - .env
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  backend:
+    build: .
+    container_name: app
+    restart: always
+    depends_on:
+      - db
+    env_file:
+    - .env
+    ports:
+      - 8000:8000
+
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - 6379:6379
+

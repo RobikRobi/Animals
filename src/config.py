@@ -14,6 +14,8 @@ class EnvData(BaseSettings):
     EMAIL_PASSWORD: str
     EMAIL_SENDER: str
     EMAIL_RECEIVER: str
+    REDIS_HOST: str
+    REDIS_PORT: int
 
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
