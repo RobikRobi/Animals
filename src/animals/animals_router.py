@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -18,14 +19,16 @@ import json
 
 app = APIRouter(prefix="/animals", tags=["Animals"])
 
+logger = logging.getLogger(__name__)
+
 # функция отправки сообщения
-def send_email():
+def send_email(email_receiver: str):
     smtp_server = config.env_data.SMTP_SERVER
     port = config.env_data.SMTP_PORT
     login = config.env_data.EMAIL_LOGIN
     password = config.env_data.EMAIL_PASSWORD
     sender_email = config.env_data.EMAIL_SENDER
-    receiver_email = config.env_data.EMAIL_RECEIVER
+    receiver_email = email_receiver
 
     subject = "Новое животное добавлено"
     body = """
@@ -56,6 +59,7 @@ def send_email():
 @app.post("/add", response_model=OutAnimal)
 async def register_animal(
     data: AddAnimal,
+    email_receiver: str,
     background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session)
 ):
@@ -65,7 +69,11 @@ async def register_animal(
     await session.refresh(newAnimal)
 
     # Запускаем задачу по отправке email
-    background_tasks.add_task(send_email)
+    background_tasks.add_task(send_email, email_receiver)
+
+    # Делаем логирование
+    logger.info(f"Добавлено животное: {newAnimal}")
+    logger.info(f"Email отправлен на: {email_receiver}")
 
     return newAnimal
 
