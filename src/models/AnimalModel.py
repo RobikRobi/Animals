@@ -14,6 +14,6 @@ class Animal(Base):
         return {
             "id": self.id,
             "name": self.name,
-            "description":self.str,
-            "population":self.int
+            "description":self.description,
+            "population":self.population
         }
