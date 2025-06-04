@@ -8,6 +8,7 @@ from src.animals.animals_shema import AddAnimal, OutAnimal
 from src.db import get_session
 from fastapi_filter import FilterDepends
 from src.animals.animals_filter import AnimalsFilter
+from src.tasks.email_tasks import send_email_task
 
 import smtplib
 from email.mime.text import MIMEText
@@ -21,39 +22,39 @@ app = APIRouter(prefix="/animals", tags=["Animals"])
 
 logger = logging.getLogger(__name__)
 
-# функция отправки сообщения
-def send_email(email_receiver: str):
-    smtp_server = config.env_data.SMTP_SERVER
-    port = config.env_data.SMTP_PORT
-    login = config.env_data.EMAIL_LOGIN
-    password = config.env_data.EMAIL_PASSWORD
-    sender_email = config.env_data.EMAIL_SENDER
-    receiver_email = email_receiver
+# # функция отправки сообщения
+# def send_email(email_receiver: str):
+#     smtp_server = config.env_data.SMTP_SERVER
+#     port = config.env_data.SMTP_PORT
+#     login = config.env_data.EMAIL_LOGIN
+#     password = config.env_data.EMAIL_PASSWORD
+#     sender_email = config.env_data.EMAIL_SENDER
+#     receiver_email = email_receiver
 
-    subject = "Новое животное добавлено"
-    body = """
-Здравствуйте!
+#     subject = "Новое животное добавлено"
+#     body = """
+# Здравствуйте!
 
-Спасибо, что добавили новое животное на нашем сайте.
+# Спасибо, что добавили новое животное на нашем сайте.
 
-Ваша работа важна для нас.
-"""
-    message = MIMEMultipart("alternative")
-    message["Subject"] = subject
-    message["From"] = sender_email
-    message["To"] = receiver_email
+# Ваша работа важна для нас.
+# """
+#     message = MIMEMultipart("alternative")
+#     message["Subject"] = subject
+#     message["From"] = sender_email
+#     message["To"] = receiver_email
 
-    text_part = MIMEText(body, "plain")
-    message.attach(text_part)
+#     text_part = MIMEText(body, "plain")
+#     message.attach(text_part)
 
-    try:
-        with smtplib.SMTP(smtp_server, port) as server:
-            server.starttls()
-            server.login(login, password)
-            server.sendmail(sender_email, receiver_email, message.as_string())
-        print("Email отправлен успешно")
-    except Exception as e:
-        print(f"Ошибка при отправке email: {e}")
+#     try:
+#         with smtplib.SMTP(smtp_server, port) as server:
+#             server.starttls()
+#             server.login(login, password)
+#             server.sendmail(sender_email, receiver_email, message.as_string())
+#         print("Email отправлен успешно")
+#     except Exception as e:
+#         print(f"Ошибка при отправке email: {e}")
 
 # добавление данных в базу
 @app.post("/add", response_model=OutAnimal)
@@ -68,8 +69,10 @@ async def register_animal(
     await session.commit()
     await session.refresh(newAnimal)
 
-    # Запускаем задачу по отправке email
-    background_tasks.add_task(send_email, email_receiver)
+    send_email_task.delay(email_receiver)
+
+    # # Запускаем задачу по отправке email
+    # background_tasks.add_task(send_email, email_receiver)
 
     # Делаем логирование
     logger.info(f"Добавлено животное: {newAnimal}")
